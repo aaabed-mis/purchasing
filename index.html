@@ -62,7 +62,7 @@
     </div>
     <div class="card">
       <div class="card-head"><h2>Landed Cost by Condition</h2><span class="hint">top condition types · value (SAR)</span></div>
-      <div class="chart-wrap"><canvas id="chart-konv-type"></canvas></div>
+      <div class="chart-wrap tall"><canvas id="chart-konv-type"></canvas></div>
     </div>
     <div class="card span-2">
       <div class="card-head"><h2>Landed Cost Trend by Condition Type</h2><span class="hint">customs, freight &amp; charges by month</span></div>
@@ -160,31 +160,6 @@
     </div>
   </section>
 
-  <!-- Materials -->
-  <section class="card table-card">
-    <div class="card-head">
-      <h2>Material Purchasing &amp; Alignment</h2>
-      <div class="table-actions"><span id="mat-count" class="hint"></span>
-        <button id="export-mat-csv" class="btn-export">Export CSV</button></div>
-    </div>
-    <div class="table-scroll">
-      <table id="mat-table">
-        <thead><tr>
-          <th>Material</th><th>Description</th><th class="num">Spend (SAR)</th><th class="num">Receipt Qty</th>
-          <th class="num">POs</th><th class="num">Open Value (SAR)</th><th class="num">Stock Qty</th>
-          <th class="num">Stock Value (SAR)</th><th>Signal</th>
-        </tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-    <div class="pager">
-      <button id="mat-prev" class="btn-page">Prev</button>
-      <span id="mat-page-info" class="hint"></span>
-      <button id="mat-next" class="btn-page">Next</button>
-      <select id="mat-page-size" class="select small"><option>10</option><option selected>25</option><option>50</option><option>100</option></select>
-    </div>
-  </section>
-
   <!-- Methodology & disclaimer (collapsible) -->
   <section class="card table-card">
     <details>
@@ -195,6 +170,6 @@
 
   <script src="assets/chart.umd.min.js"></script>
   <script src="data/data.js?v=20260908g"></script>
-  <script src="app.js?v=20260908i"></script>
+  <script src="app.js?v=20260908n"></script>
 </body>
 </html>

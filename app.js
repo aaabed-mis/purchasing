@@ -21,9 +21,8 @@ const charts = {};
 const state = {
   cc:'', vendors:new Set(), year:'', search:'',
   vsPage:1, vsSize:25, vsSort:'spend', vsDir:-1,
-  matPage:1, matSize:25, matSort:'spend', matDir:-1,
   poPage:1, poSize:25, poSort:'del_date', poDir:1,
-  vsSearch:'', matSearch:'', poSearch:''
+  vsSearch:'', poSearch:''
 };
 /* ---------- helpers ---------- */
 const fmtInt = n => (n==null?0:n).toLocaleString('en-US',{maximumFractionDigits:0});
@@ -60,7 +59,6 @@ function initTheme(){ let t='dark'; try{t=localStorage.getItem('pur-theme')||'da
 function curDelivery(){ return state.year && DATA.delivery_y && DATA.delivery_y[state.year] ? DATA.delivery_y[state.year] : DATA.delivery; }
 function curLead(){ return state.year && DATA.lead_y && DATA.lead_y[state.year] ? DATA.lead_y[state.year] : DATA.lead; }
 function vendorsForYear(){ return state.year && DATA.vendor_gr_y && DATA.vendor_gr_y[state.year] ? DATA.vendor_gr_y[state.year] : DATA.vendor_gr; }
-function materialsForYear(){ return state.year && DATA.material_gr_y && DATA.material_gr_y[state.year] ? DATA.material_gr_y[state.year] : DATA.material_gr; }
 function revForYear(){ return state.year && DATA.rev_y && DATA.rev_y[state.year] ? DATA.rev_y[state.year].val : DATA.kpi_spend.rev_val; }
 // Dimension rows (incoterm / strategy) honouring the Spend Year filter ('' = all years).
 // Each row is {label, cc, val_sar, post}; the per-year map mirrors vendor_gr_y.
@@ -270,7 +268,7 @@ function renderCharts(){
   const kvc=[...konvTypesAgg(konvMonths())].sort((a,b)=>b.val-a.val).slice(0,9);
   mk('chart-konv-type',{type:'bar',data:{labels:kvc.map(t=>(t.txt||t.type).slice(0,20)),datasets:[{label:'Amount',data:kvc.map(t=>t.val),backgroundColor:'rgba(245,166,35,.75)',borderColor:'#f5a623',borderWidth:1}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{x:{ticks:{callback:v=>fmtMoneyC(v)}},y:{ticks:{font:{size:11}}}}}});
+      scales:{x:{ticks:{callback:v=>{const a=Math.abs(v);if(a>=1e6)return (v/1e6)+'M';if(a>=1e3)return (v/1e3)+'K';return v;}}},y:{ticks:{font:{size:11}}}}}});
 
   // 12 GR spend share by Incoterms (year/company scoped) — top 8 + Other
   donutChart('chart-incoterm', curDimGr('incoterm_gr','incoterm_gr_y').filter(r=>!state.cc||r.cc===state.cc), 8);
@@ -335,53 +333,6 @@ function renderVendorTable(){
   document.getElementById('vs-page-info').textContent=`Page ${state.vsPage} of ${pages} · ${total} rows`;
   document.getElementById('vs-prev').disabled=state.vsPage<=1;
   document.getElementById('vs-next').disabled=state.vsPage>=pages;
-}
-
-/* ---------- material alignment ---------- */
-function materialBuild(){
-  const openV=new Map();
-  const qs=state.vendors, cc=state.cc, q=state.search.trim().toLowerCase();
-  for(const o of DATA.open_detail){ if(cc&&o.cc!==cc)continue; if(qs.size&&!qs.has(o.vendor))continue; openV.set(o.matnr,(openV.get(o.matnr)||0)+o.value); }
-  const rows=[];
-  for(const g of materialsForYear()){
-    if(cc&&g.cc!==cc)continue;
-    if(q&&!((g.descr||'').toLowerCase()+' '+g.matnr).includes(q))continue;
-    const st=DATA.stock[g.matnr]||{qty:0,value:0};
-    const spend=g.val_sar, ov=openV.get(g.matnr)||0;
-    rows.push({matnr:g.matnr,descr:g.descr||'',spend,qty:g.qty,po:g.po,openVal:ov,stQty:st.qty,stVal:st.value,
-      signal:alignSignal(st.value,ov,spend)});
-  }
-  rows.sort((a,b)=>state.matDir<0?b[state.matSort]-a[state.matSort]:a[state.matSort]-b[state.matSort]);
-  return rows;
-}
-function alignSignal(stockVal,openVal,spend){
-  const hi=1e6;
-  if(stockVal>hi&&openVal>hi) return 'High stock + open commitment';
-  if(stockVal>2*hi&&spend>hi) return 'High stock + active buying';
-  if(stockVal<=0&&openVal>0) return 'Replenishment in transit';
-  if(stockVal<=0&&openVal<=0&&spend>hi) return 'No stock, no incoming';
-  return '—';
-}
-function renderMaterialTable(){
-  const rows=materialBuild();
-  document.getElementById('mat-count').textContent=rows.length+' materials';
-  const tbody=document.querySelector('#mat-table tbody'); tbody.innerHTML='';
-  const pgsz=state.matSize,total=rows.length,pages=Math.max(1,Math.ceil(total/pgsz));
-  state.matPage=Math.min(state.matPage,pages);
-  rows.slice((state.matPage-1)*pgsz,state.matPage*pgsz).forEach(r=>{
-    const tr=document.createElement('tr');
-    const sig = r.signal!=='—';
-    const cls = r.signal.includes('No stock')?'t-Out':r.signal.includes('High stock')?'t-Watch':'t-Incoming';
-    tr.innerHTML=`<td>${esc(r.matnr)}</td><td style="white-space:normal;min-width:180px">${esc(r.descr)}</td>
-      <td class="num">${r.spend?fmtNum(r.spend,0):'—'}</td><td class="num">${r.qty?fmtInt(r.qty):'—'}</td>
-      <td class="num">${r.po||'—'}</td><td class="num">${r.openVal?fmtNum(r.openVal,0):'—'}</td>
-      <td class="num">${fmtInt(r.stQty)}</td><td class="num">${fmtNum(r.stVal,0)}</td>
-      <td>${sig?`<span class="tag ${cls}">${esc(r.signal)}</span>`:'—'}</td>`;
-    tbody.appendChild(tr);
-  });
-  document.getElementById('mat-page-info').textContent=`Page ${state.matPage} of ${pages} · ${total} rows`;
-  document.getElementById('mat-prev').disabled=state.matPage<=1;
-  document.getElementById('mat-next').disabled=state.matPage>=pages;
 }
 
 /* ---------- incoming purchase-orders table (all open lines) ---------- */
@@ -454,6 +405,7 @@ function renderMethodology(){
     <li><b>Avg PO Price</b> = net received value ÷ distinct POs in the selected year/company.</li>
     <li><b>Avg Supplier Lead Time</b> (scorecard) = <code>AVG(GR date − PO date)</code> per supplier over goods-receipt (101) postings, weighted by postings across years.</li>
     <li><b>Avg PO Value</b> (scorecard) = a supplier's received spend ÷ its distinct POs.</li>
+    <li><b>Risk</b> (scorecard) is an open-exposure &amp; concentration signal — it does not score delivery/lead-time performance. <b>High</b> = overdue open value &gt; SAR 5M; <b>Watch</b> = any overdue open value or spend share &gt; 30% (over-dependence); <b>Low</b> = no overdue open value and share ≤ 30%. Overdue = open PO lines in <code>fact_incoming</code> whose expected delivery date is before the as-of date; share = supplier spend ÷ total net spend for the selected year/company.</li>
     <li><b>Spend-share charts</b> (Incoterms, Strategy Group, Point of Destination, Container, Freight Forwarder, Broker) group net received value off <code>po_receipt</code>. Freight-forwarder and broker values are vendor codes resolved to names via <code>dim_vendors</code>; blank values are reported as "(blank)" (incoterms) or "Not Defined".</li>
     <li><b>Stock</b> = <code>fact_inventory</code> current on-hand at material level, used only to compare purchasing / incoming against what is held (no inventory-aging here).</li>
     <li><b>Window</b>: goods-receipt analytics cover 2024 onward (2023 is a partial extract year, excluded — matching the PSI / Inventory dashboards).</li>
@@ -473,15 +425,15 @@ function populateFilters(){
 }
 function bindFilters(){
   const tb=document.getElementById('theme-toggle'); if(tb) tb.addEventListener('click',()=>applyTheme(CURRENT_THEME==='light'?'dark':'light'));
-  document.getElementById('f-cc').addEventListener('change',e=>{state.cc=e.target.value;state.vsPage=1;state.matPage=1;state.poPage=1;refresh();});
+  document.getElementById('f-cc').addEventListener('change',e=>{state.cc=e.target.value;state.vsPage=1;state.poPage=1;refresh();});
   document.getElementById('f-year').addEventListener('change',e=>{state.year=e.target.value;state.vsPage=1;refresh();});
-  document.getElementById('f-search').addEventListener('input',debounce(e=>{state.search=e.target.value;state.vsPage=1;state.matPage=1;state.poPage=1;refresh();},200));
+  document.getElementById('f-search').addEventListener('input',debounce(e=>{state.search=e.target.value;state.vsPage=1;state.poPage=1;refresh();},200));
   document.getElementById('reset').addEventListener('click',()=>{
-    Object.assign(state,{cc:'',year:'',search:'',vsPage:1,matPage:1,poPage:1,poSearch:''}); state.vendors.clear();
+    Object.assign(state,{cc:'',year:'',search:'',vsPage:1,poPage:1,poSearch:''}); state.vendors.clear();
     document.getElementById('f-cc').value='';document.getElementById('f-year').value='';
     document.getElementById('f-search').value=''; syncMsToggle(); refresh();
   });
-  bindPage('vs',renderVendorTable); bindPage('mat',renderMaterialTable); bindPage('po',renderPoTable);
+  bindPage('vs',renderVendorTable); bindPage('po',renderPoTable);
   // PO table column sort
   document.querySelectorAll('#po-table th').forEach((th,i)=>{
     th.addEventListener('click',()=>{ const key={0:'po',1:'item',2:'matnr',3:'descr',4:'vname',5:'qty',6:'uom',7:'value',8:'po_date',9:'del_date',10:'status',11:'ship'}[i];
@@ -489,17 +441,12 @@ function bindFilters(){
   });
   // PO table header search control
   const poSearchIn=document.getElementById('po-search'); if(poSearchIn) poSearchIn.addEventListener('input',debounce(e=>{state.poSearch=e.target.value;state.poPage=1;renderPoTable();},200));
-  // column-header sort for vendor & material tables
+  // column-header sort for vendor table
   document.querySelectorAll('#vendor-table th').forEach((th,i)=>{
     th.addEventListener('click',()=>{ const key={1:'name',2:'local',3:'spend',4:'share',5:'post',6:'po',7:'avgLead',8:'avgPOVal',9:'openVal',10:'overdue'}[i];
       if(!key)return; if(state.vsSort===key)state.vsDir*=-1; else{state.vsSort=key;state.vsDir=-1;} state.vsPage=1; renderVendorTable(); });
   });
-  document.querySelectorAll('#mat-table th').forEach((th,i)=>{
-    th.addEventListener('click',()=>{ const key={2:'spend',3:'qty',4:'po',5:'openVal',6:'stQty',7:'stVal'}[i];
-      if(!key)return; if(state.matSort===key)state.matDir*=-1; else{state.matSort=key;state.matDir=-1;} state.matPage=1; renderMaterialTable(); });
-  });
   document.getElementById('export-vendor-csv').addEventListener('click',()=>exportTableCSV('#vendor-table','Supplier'));
-  document.getElementById('export-mat-csv').addEventListener('click',()=>exportTableCSV('#mat-table','Materials'));
   const expPo=document.getElementById('export-po-csv'); if(expPo) expPo.addEventListener('click',()=>exportTableCSV('#po-table','IncomingPOs'));
 }
 function bindPage(prefix,render){
@@ -551,7 +498,7 @@ function syncMsToggle(){
 }
 
 /* ---------- refresh ---------- */
-function refresh(){ renderKpis(); renderCharts(); renderVendorTable(); renderMaterialTable(); renderPoTable(); }
+function refresh(){ renderKpis(); renderCharts(); renderVendorTable(); renderPoTable(); }
 function renderReconStatus(){}
 
 /* ---------- boot ---------- */
