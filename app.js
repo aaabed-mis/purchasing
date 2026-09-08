@@ -435,10 +435,6 @@ function renderPoTable(){
 /* ---------- methodology ---------- */
 function renderMethodology(){
   const el=document.getElementById('method-body');
-  const notes=DATA.reconcile||[];
-  const recRows=notes.map(r=>`<tr><td>${esc(r.kpi)}</td><td class="num">${fmtInt(r.calculated)}</td>
-    <td class="num">${r.source==null?'—':fmtInt(r.source)}</td>
-    <td>${r.ok?'<span class="tag t-Healthy">OK</span>':r.source==null?'<span class="tag t-None">n/a</span>':'<span class="tag t-Critical">MISMATCH</span>'}</td></tr>`).join('');
   el.innerHTML=`
   <h3>Value basis &amp; grain</h3>
   <ul>
@@ -454,14 +450,17 @@ function renderMethodology(){
     <li><b>Landed cost</b> = <code>fact_konv</code> condition ledger (customs duty, freight, port / transport, insurance, detention …). It has no PO/material key, so it is aggregated independently (vendor + condition type + month) and is <b>never joined</b> to PO lines — no spend double count.</li>
     <li><b>Delivery performance</b> compares the GR date to the statistically-released delivery date (<code>stat_rel_del_date</code>) on goods-receipt (101) postings; records without a usable expected date are reported as "missing" and excluded. On-Time Delivery = received on or before the expected date (early + on-time).</li>
     <li><b>Lead time</b> = GR date − PO creation date on goods-receipt (101) postings.</li>
+    <li><b>Received Tonnage</b> = <code>SUM(tonnage)</code> over the net goods-receipt universe (year/company scoped).</li>
+    <li><b>Avg PO Price</b> = net received value ÷ distinct POs in the selected year/company.</li>
+    <li><b>Avg Supplier Lead Time</b> (scorecard) = <code>AVG(GR date − PO date)</code> per supplier over goods-receipt (101) postings, weighted by postings across years.</li>
+    <li><b>Avg PO Value</b> (scorecard) = a supplier's received spend ÷ its distinct POs.</li>
+    <li><b>Spend-share charts</b> (Incoterms, Strategy Group, Point of Destination, Container, Freight Forwarder, Broker) group net received value off <code>po_receipt</code>. Freight-forwarder and broker values are vendor codes resolved to names via <code>dim_vendors</code>; blank values are reported as "(blank)" (incoterms) or "Not Defined".</li>
     <li><b>Stock</b> = <code>fact_inventory</code> current on-hand at material level, used only to compare purchasing / incoming against what is held (no inventory-aging here).</li>
     <li><b>Window</b>: goods-receipt analytics cover 2024 onward (2023 is a partial extract year, excluded — matching the PSI / Inventory dashboards).</li>
   </ul>
   <h3>Fact-to-fact join protection</h3>
   <p style="color:var(--text)">No raw fact-to-fact join is performed. Goods-receipt (spend), open-commitment (incoming), landed-cost (konv) and stock (inventory) are separate sources kept at their own grain; they meet only at material / vendor level for comparison. History-vs-open are therefore different snapshots (received history vs. currently-open) and no "Ordered = Received + Open" identity is forced.</p>
-  <h3>Reconciliation vs. source (each KPI traced to its own table)</h3>
-  <div class="table-scroll" style="max-height:300px"><table style="width:100%"><thead><tr><th>KPI</th><th class="num">Calculated</th><th class="num">Source</th><th>Status</th></tr></thead><tbody>${recRows}</tbody></table></div>
-  <div class="disclaimer"><b>⚠️ Disclaimer:</b> Dashboard figures are derived estimates for management monitoring and decision support only. They are not audited accounting values; spend uses local-currency posting amounts and may differ from SAP standard reports on alternate valuation / currency bases. Open commitments and landed cost are subject to the completeness of the source extracts. Validate against SAP before making operational or financial decisions.</div>`;
+  <div class="disclaimer"><b>⚠️ Disclaimer:</b> Dashboard figures are derived estimates for management monitoring and decision support only. They are not audited accounting values; spend uses net SAR goods-receipt values and may differ from SAP standard reports on alternate valuation / currency bases. Open commitments and landed cost are subject to the completeness of the source extracts. Validate against SAP before making operational or financial decisions.</div>`;
 }
 
 /* ---------- filters ---------- */
