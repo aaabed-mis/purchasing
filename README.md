@@ -6,11 +6,15 @@ Enterprise procurement intelligence dashboard for SAP ECC/PRD data. Built from t
 - `index.html` — dashboard entry point (open in a browser; works on `file://`)
 - `styles.css` — corporate design system (Inventory / Material Aging dashboard family)
 - `app.js` — client-side analytics & rendering (Chart.js)
+- `auth-config.js` / `auth.js` — Supabase email+password login gate (per-dashboard access)
 - `assets/` — Chart.js UMD, logo, favicon
 - `data/data.js` (`window.__PURCHASING__`) — pre-aggregated analytical payload
 - `data/purchasing.json` — same payload (JSON form)
 - `data/export_purchasing.py` — regenerates the payload from DuckDB; run with the 3.14 Python:
   `C:/Users/c.crizaldo/AppData/Local/Python/pythoncore-3.14-64/python.exe data/export_purchasing.py`
+
+## Auth
+The dashboard is gated by a **Supabase email + password** login (`auth-config.js` holds the publishable key; `auth.js` checks the user's `app_metadata.dashboards` allowlist for `"purchasing"`). Boot waits for the `auth:ready` event; opening `index.html` via `file://` without the auth files boots directly (local testing fallback).
 
 ## Data sources (Documents/duckdb, schema `sap_prd`)
 | Logical dataset            | DuckDB file          | Table           | Role                                             |

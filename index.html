@@ -5,9 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Purchasing Dashboard</title>
   <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
-  <link rel="stylesheet" href="styles.css?v=20260910a" />
+  <link rel="stylesheet" href="styles.css?v=20260910e" />
 </head>
 <body>
+  <!-- Login gate screen (hidden once a session exists) -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <img class="auth-logo" src="assets/logo.png" alt="Logo" />
+      <h1>Purchasing Dashboard</h1>
+      <p class="auth-sub">Sign in with your company account</p>
+      <form id="auth-form" novalidate>
+        <label class="auth-label" for="auth-email">Email</label>
+        <input id="auth-email" class="auth-input" type="email" placeholder="you@aaabed.com" autocomplete="username" required />
+        <label class="auth-label" for="auth-password">Password</label>
+        <input id="auth-password" class="auth-input" type="password" placeholder="••••••••" autocomplete="current-password" required />
+        <div id="auth-error" class="auth-error"></div>
+        <button id="auth-submit" class="auth-btn" type="submit">Sign in</button>
+      </form>
+      <div id="auth-denied" class="auth-denied hidden">
+        <div class="auth-denied-icon">⛔</div>
+        <h2>Access denied</h2>
+        <p>Your account <b id="auth-denied-email"></b> does not have access to this dashboard.</p>
+        <p class="auth-sub">Contact your administrator to request access.</p>
+        <button id="auth-denied-back" class="auth-btn auth-btn-ghost" type="button">Sign out</button>
+      </div>
+    </div>
+  </div>
+
   <header class="topbar">
     <div class="brand">
       <img class="brand-mark" src="assets/logo.png" alt="Logo" />
@@ -19,8 +43,42 @@
     <div class="meta">
       <button id="theme-toggle" class="pill theme-btn" title="Toggle theme">☾</button>
       <span class="pill" id="meta-time">Data refreshed: …</span>
+      <div class="user-menu" id="user-menu">
+        <button id="user-btn" class="user-btn pill" title="Account">👤</button>
+        <div class="user-dropdown hidden">
+          <div class="user-dropdown-head">
+            <span class="user-dropdown-avatar">👤</span>
+            <div>
+              <div class="user-dropdown-name" id="user-name">…</div>
+              <div class="user-dropdown-email" id="user-email">…</div>
+            </div>
+          </div>
+          <button type="button" id="change-password" class="user-dropdown-item">Change password</button>
+          <button type="button" id="logout" class="user-dropdown-item danger">Sign out</button>
+        </div>
+      </div>
     </div>
   </header>
+
+  <!-- Change password modal -->
+  <div id="pw-modal" class="modal hidden">
+    <div class="modal-card">
+      <h2>Change password</h2>
+      <form id="pw-form" novalidate>
+        <label class="auth-label" for="pw-current">Current password</label>
+        <input id="pw-current" class="auth-input" type="password" autocomplete="current-password" required />
+        <label class="auth-label" for="pw-new">New password</label>
+        <input id="pw-new" class="auth-input" type="password" autocomplete="new-password" required />
+        <label class="auth-label" for="pw-confirm">Confirm new password</label>
+        <input id="pw-confirm" class="auth-input" type="password" autocomplete="new-password" required />
+        <div id="pw-msg" class="auth-error"></div>
+        <div class="modal-actions">
+          <button type="button" id="pw-cancel" class="auth-btn auth-btn-ghost">Cancel</button>
+          <button type="submit" id="pw-submit" class="auth-btn">Update password</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Filter / slicer bar -->
   <section class="filters">
@@ -168,8 +226,11 @@
     </details>
   </section>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth-config.js"></script>
+  <script src="auth.js"></script>
   <script src="assets/chart.umd.min.js"></script>
   <script src="data/data.js?v=20260910b"></script>
-  <script src="app.js?v=20260910c"></script>
+  <script src="app.js?v=20260910d"></script>
 </body>
 </html>

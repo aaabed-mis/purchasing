@@ -518,4 +518,10 @@ function boot(){
   }
   refresh();
 }
-document.addEventListener('DOMContentLoaded',boot);
+// Boot only after the login gate confirms a session (auth.js dispatches auth:ready).
+document.addEventListener('auth:ready', boot);
+// Fallback for local double-click testing without auth files present: boot anyway.
+// (typeof check — top-level const does not attach to window)
+if (typeof SUPABASE_URL === 'undefined' || typeof SUPABASE_ANON_KEY === 'undefined') {
+  document.addEventListener('DOMContentLoaded', boot);
+}
