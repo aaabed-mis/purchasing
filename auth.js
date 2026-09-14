@@ -10,6 +10,17 @@ const DASHBOARD_ID = 'purchasing';
 let SB = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Login disabled (LOGIN_ENABLED = false in auth-config.js): bypass the gate,
+  // open straight to the data, and hide the sign-out / change-password menu.
+  if (typeof LOGIN_ENABLED !== 'undefined' && !LOGIN_ENABLED) {
+    const off = document.getElementById('auth-screen');
+    if (off) off.classList.add('hidden');
+    const menu = document.getElementById('user-menu');
+    if (menu) menu.classList.add('hidden');
+    document.dispatchEvent(new CustomEvent('auth:ready', { detail: { user: null } }));
+    return;
+  }
+
   // SUPABASE_URL / SUPABASE_ANON_KEY are top-level consts in auth-config.js —
   // global lexical bindings, visible here but NOT attached to window.
   if (!window.supabase || typeof SUPABASE_URL === 'undefined' || typeof SUPABASE_ANON_KEY === 'undefined') {
